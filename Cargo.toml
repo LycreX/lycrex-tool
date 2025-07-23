@@ -1,0 +1,22 @@
+[package]
+name = "lycrex-tool"
+version = "0.0.1"
+edition = "2024"
+description = "Lycrex Tool"
+license = "MIT"
+authors = ["ChisatoNishikigi73"]
+repository = "https://github.com/ChisatoNishikigi73/lycrex-tool"
+homepage = "https://github.com/ChisatoNishikigi73/lycrex-tool"
+keywords = ["lycrex"]
+
+[dependencies]
+windows = { version = "0.52", features = [
+    "Win32_System_Diagnostics_Debug",
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_ToolHelp"
+], optional = true }
+
+[features]
+default = []
+win-memory = ["windows"]

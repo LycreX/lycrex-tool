@@ -10,6 +10,7 @@ homepage = "https://github.com/ChisatoNishikigi73/lycrex-tool"
 keywords = ["lycrex"]
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
 windows = { version = "0.52", features = [
     "Win32_System_Diagnostics_Debug",
     "Win32_Foundation",

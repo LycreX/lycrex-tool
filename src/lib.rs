@@ -4,5 +4,3 @@ pub mod lycrex;
 pub mod memory;
 
 pub use constants::*;
-#[cfg(feature = "win-memory")]
-pub use memory::*;

@@ -26,7 +26,7 @@ use std::os::windows::ffi::OsStrExt;
 /// 
 /// # Arguments
 /// * `display_duration` - logo显示时间（秒），默认为1秒
-pub fn print_logo(display_duration: Option<u64>) {
+pub fn display_logo(display_duration: Option<u64>) {
     let duration = display_duration.unwrap_or(1);
     
     #[cfg(target_os = "windows")]
@@ -35,7 +35,7 @@ pub fn print_logo(display_duration: Option<u64>) {
     }
     #[cfg(target_os = "linux")]
     {
-        print_logo_linux();
+        print_logo_default();
     }
 }
 
@@ -170,8 +170,8 @@ fn print_logo_windows(display_duration: u64) {
     }
 }
 
-#[cfg(target_os = "linux")]
-fn print_logo_linux() {
+#[allow(dead_code)]
+fn print_logo_default() {
     println!("{}", crate::constants::LOGO);
     println!("Lycrex Tool Version: {}", crate::constants::VERSION);
     println!("{}", crate::constants::COPYRIGHT);

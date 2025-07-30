@@ -18,6 +18,8 @@ pub enum TimeFormat {
     UnixMillis,
     /// 系统时间（UTC偏移）
     SystemTime,
+    /// 系统时间（本地时间）
+    LocalTime,
     /// ISO 8601格式
     Iso8601,
     /// 程序运行时间
@@ -30,6 +32,7 @@ pub struct TimeInfo {
     pub unix: u64,
     pub unix_millis: u128,
     pub system_time: String,
+    pub local_time: String,
     pub iso8601: String,
     pub relative: u128,
 }
@@ -37,7 +40,7 @@ pub struct TimeInfo {
 /// 获取系统时区信息
 pub fn get_system_timezone() -> TimezoneInfo {
     let local: DateTime<Local> = Local::now();
-    let utc: DateTime<Utc> = Utc::now();
+    // let utc: DateTime<Utc> = Utc::now();
     
     // 计算时区偏移
     let offset = local.offset();
@@ -64,8 +67,9 @@ pub fn get_current_time() -> TimeInfo {
         unix: unix_epoch.as_secs(),
         unix_millis: unix_epoch.as_millis(),
         system_time: format_system_time(),
+        local_time: format_local_time(),
         iso8601: format_iso8601_time(),
-        relative: get_program_uptime(),
+        relative: get_program_uptime_millis(),
     }
 }
 
@@ -75,6 +79,7 @@ pub fn get_time(format: TimeFormat) -> String {
         TimeFormat::Unix => get_current_time().unix.to_string(),
         TimeFormat::UnixMillis => get_current_time().unix_millis.to_string(),
         TimeFormat::SystemTime => get_current_time().system_time,
+        TimeFormat::LocalTime => get_current_time().local_time,
         TimeFormat::Iso8601 => get_current_time().iso8601,
         TimeFormat::Relative => get_current_time().relative.to_string(),
     }
@@ -127,9 +132,15 @@ fn format_system_time() -> String {
     
     format!(
         "{} UTC{}",
-        local.format("%Y-%m-%d %H:%M:%S%.6f"),
+        format!("{}", local.format("%Y-%m-%d %H:%M:%S%.6f")),
         utc_offset
     )
+}
+
+/// 格式化本地时间
+fn format_local_time() -> String {
+    let local: DateTime<Local> = Local::now();
+    format!("{}", local.format("%Y-%m-%d %H:%M:%S"))
 }
 
 /// 格式化ISO 8601时间
@@ -148,8 +159,34 @@ pub fn init_program_time() {
     }
 }
 
+/// 获取程序运行时间（纳秒）
+pub fn get_program_uptime_nanos() -> u128 {
+    unsafe {
+        match PROGRAM_START {
+            Some(start_time) => start_time.elapsed().as_nanos(),
+            None => {
+                init_program_time();
+                0
+            }
+        }
+    }
+}
+
+/// 获取程序运行时间（微秒）
+pub fn get_program_uptime_micros() -> u128 {
+    unsafe {
+        match PROGRAM_START {
+            Some(start_time) => start_time.elapsed().as_micros(),
+            None => {
+                PROGRAM_START = Some(Instant::now());
+                0
+            }
+        }
+    }
+}
+
 /// 获取程序运行时间（毫秒）
-pub fn get_program_uptime() -> u128 {
+pub fn get_program_uptime_millis() -> u128 {
     unsafe {
         match PROGRAM_START {
             Some(start_time) => start_time.elapsed().as_millis(),
@@ -159,6 +196,10 @@ pub fn get_program_uptime() -> u128 {
             }
         }
     }
+}
+
+pub fn get_program_uptime_seconds() -> u128 {
+    get_program_uptime_millis() / 1000
 }
 
 /// 时间工具结构体
@@ -176,20 +217,79 @@ impl TimeUtils {
     }
     
     /// 获取系统时间（包含UTC偏移）
-    pub fn system_time() -> String {
+    pub fn system_time_string() -> String {
         get_current_time().system_time
+    }
+
+    /// 获取本地时间
+    pub fn local_time_string() -> String {
+        get_current_time().local_time
     }
     
     /// 获取ISO 8601格式时间
-    pub fn iso8601_time() -> String {
+    pub fn iso8601_time_string() -> String {
         get_current_time().iso8601
     }
-    
-    /// 获取程序运行时间（毫秒）
-    pub fn program_uptime() -> u128 {
-        get_program_uptime()
+
+    /// 获取程序运行时间（自然时间）
+    pub fn program_uptime_string() -> String {
+        Self::format_natural_time(get_program_uptime_millis())
     }
     
+    pub fn format_natural_time(millis: u128) -> String {
+        if millis < 1_000 {
+            format!("+{}ms", millis)
+        } else {
+            let total_seconds = millis / 1_000;
+            let days = total_seconds / 86400;
+            let hours = (total_seconds % 86400) / 3600;
+            let minutes = (total_seconds % 3600) / 60;
+            let seconds = total_seconds % 60;
+            
+            let mut result = String::new();
+            
+            if days > 0 {
+                result.push_str(&format!("{}d", days));
+            }
+            if hours > 0 || days > 0 {
+                result.push_str(&format!("{}h", hours));
+            }
+            if minutes > 0 || hours > 0 || days > 0 {
+                result.push_str(&format!("{}m", minutes));
+            }
+            result.push_str(&format!("{}s", seconds));
+            
+            format!("+{}", result)
+        }
+    }
+    
+    /// 获取程序运行时间（秒）
+    pub fn program_uptime_seconds() -> u128 {
+        get_program_uptime_seconds()
+    }
+
+    pub fn program_uptime_millis() -> u128 {
+        get_program_uptime_millis()
+    }
+
+    pub fn program_uptime_micros() -> u128 {
+        get_program_uptime_micros()
+    }
+
+    pub fn program_uptime_nanos() -> u128 {
+        get_program_uptime_nanos()
+    }
+
+    pub fn program_uptime(level: u8) -> u128 {
+        match level {
+            0 => get_program_uptime_seconds() as u128,
+            1 => get_program_uptime_millis(),
+            2 => get_program_uptime_micros(),
+            3 => get_program_uptime_nanos(),
+            _ => get_program_uptime_millis(),
+        }
+    }
+
     /// 获取完整时间信息
     pub fn full_time_info() -> TimeInfo {
         get_current_time()
@@ -248,7 +348,7 @@ impl TimeUtils {
         ((days + 4) % 7) as u32
     }
     
-    /// 获取星期几的中文名称
+    /// 获取星期几的名称
     pub fn get_weekday_name(weekday: u32) -> &'static str {
         match weekday {
             0 => "Sunday",
@@ -262,7 +362,7 @@ impl TimeUtils {
         }
     }
     
-    /// 获取月份的中文名称
+    /// 获取月份的名称
     pub fn get_month_name(month: u32) -> &'static str {
         match month {
             1 => "January",

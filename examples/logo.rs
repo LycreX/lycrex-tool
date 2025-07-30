@@ -5,15 +5,20 @@ pub fn main() {
         use lycrex_tool::memory::win_memory::to_u32;
         use lycrex_tool::lycrex::logo;
         use lycrex_tool::lycrex::logger::start_log_simple;
-        use lycrex_tool::info;
+        use lycrex_tool::{info, error};
 
         logo::display_logo(Some(2));
 
-        start_log_simple("info", true).expect("Init log failed");
-
+        start_log_simple("info", true, 5).expect("Init log failed");
         info!("example", "Init log success");
 
-        let proc = ProcessInstance::new_by_name("tes.exe").expect("Create process instance failed");
+        let proc = match ProcessInstance::new_by_name("tes.exe") {
+            Ok(proc) => proc,
+            Err(e) => {
+                error!("example", "Create process instance failed: {}", e);
+                return;
+            }
+        };
 
         loop {
             use std::time::Duration;

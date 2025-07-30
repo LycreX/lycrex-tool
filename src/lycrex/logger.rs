@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
 };
+use crate::utils::time::{TimeFormat, TimeUtils};
 
 /// 日志级别
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -64,6 +65,8 @@ pub struct DefaultFormatter {
     pub show_timestamp: bool,
     pub show_target: bool,
     pub show_location: bool,
+    pub time_format: TimeFormat,
+    pub uptime_level: i8,
 }
 
 impl DefaultFormatter {
@@ -73,6 +76,8 @@ impl DefaultFormatter {
             show_timestamp: true,
             show_target: true,
             show_location: true,
+            time_format: TimeFormat::SystemTime,
+            uptime_level: 3,
         }
     }
 
@@ -82,6 +87,36 @@ impl DefaultFormatter {
             show_timestamp: true,
             show_target: true,
             show_location: true,
+            time_format: TimeFormat::SystemTime,
+            uptime_level: 1,
+        }
+    }
+
+    pub fn with_time_format(time_format: TimeFormat) -> Self {
+        Self {
+            use_colors: true,
+            show_timestamp: true,
+            show_target: true,
+            show_location: true,
+            time_format,
+            uptime_level: 1,
+        }
+    }
+
+    pub fn with_time_format_and_options(
+        time_format: TimeFormat,
+        use_colors: bool,
+        show_timestamp: bool,
+        show_target: bool,
+        show_location: bool,
+    ) -> Self {
+        Self {
+            use_colors,
+            show_timestamp,
+            show_target,
+            show_location,
+            time_format,
+            uptime_level: 1,
         }
     }
 }
@@ -92,11 +127,31 @@ impl Formatter for DefaultFormatter {
         
         // 时间戳
         if self.show_timestamp {
-            let datetime = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-            write!(&mut output, "[{}] ", datetime).unwrap();
+            let time_str = match self.time_format {
+                TimeFormat::Unix => record.timestamp.to_string(),
+                TimeFormat::UnixMillis => (record.timestamp * 1000).to_string(),
+                TimeFormat::SystemTime => TimeUtils::system_time_string(),
+                TimeFormat::LocalTime => TimeUtils::local_time_string(),
+                TimeFormat::Iso8601 => TimeUtils::iso8601_time_string(),
+                TimeFormat::Relative => {
+                    if self.uptime_level < 0 {
+                        TimeUtils::program_uptime_string()
+                    } else {
+                        let uptime = TimeUtils::program_uptime(self.uptime_level as u8);
+
+                        let unit = match self.uptime_level {
+                            0 => "s",
+                            1 => "ms",
+                            2 => "μs",
+                            3 => "ns",
+                            _ => "ms",
+                        };
+
+                        format!("+{} {}", uptime, unit)
+                    }
+                }
+            };
+            write!(&mut output, "[{}] ", time_str).unwrap();
         }
 
         // 级别
@@ -193,6 +248,7 @@ impl Writer for FileWriter {
 pub struct LogConfig {
     pub level: Level,
     pub writers: Vec<Box<dyn Writer>>,
+    pub time_format: TimeFormat,
 }
 
 impl Default for LogConfig {
@@ -200,6 +256,7 @@ impl Default for LogConfig {
         Self {
             level: Level::Info,
             writers: vec![],
+            time_format: TimeFormat::SystemTime,
         }
     }
 }
@@ -381,7 +438,7 @@ macro_rules! error_default {
     };
 }
 
-pub fn start_log_simple(level: &str, write_file: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn start_log_simple(level: &str, write_file: bool, time_format_int: u8) -> Result<(), Box<dyn std::error::Error>> {
     let mut config = LogConfig::default();
 
     match level {
@@ -405,6 +462,17 @@ pub fn start_log_simple(level: &str, write_file: bool) -> Result<(), Box<dyn std
         }
     }
 
+    // 设置时间格式
+    config.time_format = match time_format_int {
+        0 => TimeFormat::Unix,
+        1 => TimeFormat::UnixMillis,
+        2 => TimeFormat::LocalTime,
+        3 => TimeFormat::SystemTime,
+        4 => TimeFormat::Iso8601,
+        5 => TimeFormat::Relative,
+        _ => TimeFormat::SystemTime,
+    };
+
     // 文件输出器
     if write_file {
         if let Ok(file_writer) = FileWriter::new("app.log".to_string()) {
@@ -418,10 +486,11 @@ pub fn start_log_simple(level: &str, write_file: bool) -> Result<(), Box<dyn std
         show_timestamp: true,
         show_target: true,
         show_location: false,
+        time_format: config.time_format,
+        uptime_level: -1,
     };
     let console_writer = ConsoleWriter::with_formatter(Box::new(console_formatter));
     config.writers.push(Box::new(console_writer));
     
-    // 初始化日志系统
     init_with_config(config)
 }

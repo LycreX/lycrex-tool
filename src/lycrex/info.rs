@@ -23,3 +23,6 @@ pub const EDITION: &str = "Public Edition";
 pub const AUTHOR: &str = "ChisatoNishikigi73";
 pub const COPYRIGHT: &str = r#"Copyright (c) 2025 Chisato73 and LycreX
 Public Edition is licensed under the MIT License."#;
+
+#[allow(unused_variables)]
+pub const MORE_INFORMATION: &str = "For more info, ctrl+click on https://github.com/LycreX/lycrex-tool or visit https://lycrex.com";

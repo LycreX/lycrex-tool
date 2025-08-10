@@ -12,18 +12,32 @@ pub struct TimezoneInfo {
 /// 时间格式枚举
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TimeFormat {
-    /// Unix时间戳（秒）
+    /// Unix时间戳（秒） eg: 1723238400
     Unix,
-    /// Unix时间戳（毫秒）
+    /// Unix时间戳（毫秒） eg: 1723238400000
     UnixMillis,
-    /// 系统时间（UTC偏移）
+    /// 系统时间（UTC偏移） eg: 2024-08-10 16:00:00 +08:00
     SystemTime,
-    /// 系统时间（本地时间）
+    /// 系统时间（本地时间） eg: 2024-08-10 16:00:00
     LocalTime,
-    /// ISO 8601格式
+    /// ISO 8601格式 eg: 2024-08-10T16:00:00.000Z
     Iso8601,
-    /// 程序运行时间
+    /// 程序运行时间 eg: +1000ms
     Relative,
+}
+
+impl TimeFormat {
+    pub fn from_int(value: i8) -> Option<Self> {
+        match value {
+            0 => Some(TimeFormat::Unix),
+            1 => Some(TimeFormat::UnixMillis),
+            2 => Some(TimeFormat::SystemTime),
+            3 => Some(TimeFormat::LocalTime),
+            4 => Some(TimeFormat::Iso8601),
+            5 => Some(TimeFormat::Relative),
+            _ => Some(TimeFormat::LocalTime),
+        }
+    }
 }
 
 /// 时间信息结构体

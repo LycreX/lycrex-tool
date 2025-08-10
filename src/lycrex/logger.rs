@@ -438,7 +438,7 @@ macro_rules! error_default {
     };
 }
 
-pub fn start_log_simple(level: &str, write_file: bool, time_format_int: u8) -> Result<(), Box<dyn std::error::Error>> {
+pub fn start_log_simple(level: &str, write_file: bool, time_format_int: i8) -> Result<(), Box<dyn std::error::Error>> {
     let mut config = LogConfig::default();
 
     match level {
@@ -463,15 +463,7 @@ pub fn start_log_simple(level: &str, write_file: bool, time_format_int: u8) -> R
     }
 
     // 设置时间格式
-    config.time_format = match time_format_int {
-        0 => TimeFormat::Unix,
-        1 => TimeFormat::UnixMillis,
-        2 => TimeFormat::LocalTime,
-        3 => TimeFormat::SystemTime,
-        4 => TimeFormat::Iso8601,
-        5 => TimeFormat::Relative,
-        _ => TimeFormat::SystemTime,
-    };
+    config.time_format = TimeFormat::from_int(time_format_int).unwrap();
 
     // 文件输出器
     if write_file {

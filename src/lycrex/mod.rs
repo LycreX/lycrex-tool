@@ -1,5 +1,6 @@
 pub mod logo;
 pub mod logger;
+pub mod info;
 
 static mut IS_INIT: bool = false;
 

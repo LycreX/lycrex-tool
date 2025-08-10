@@ -18,8 +18,8 @@ pub const LOGO_WINDOWS: &str = r#"
 
 "#;
 
-pub const VERSION: &str = "0.0.3";
+pub const CARGO_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const EDITION: &str = "Public Edition";
 pub const AUTHOR: &str = "ChisatoNishikigi73";
-pub const COPYRIGHT: &str = r#"Copyright (c) 2025 Chisato73 and Lycrex
+pub const COPYRIGHT: &str = r#"Copyright (c) 2025 Chisato73 and LycreX
 Public Edition is licensed under the MIT License."#;

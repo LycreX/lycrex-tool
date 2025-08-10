@@ -77,9 +77,9 @@ fn print_logo_windows(display_duration: u64) {
                 // 格式化显示文本
                 let text = format!(
                     "{}\nLycrex Tool Version: {}\n{}",
-                    crate::constants::LOGO_WINDOWS,
-                    crate::constants::VERSION,
-                    crate::constants::COPYRIGHT
+                    crate::lycrex::info::LOGO_WINDOWS,
+                    crate::lycrex::info::CARGO_VERSION,
+                    crate::lycrex::info::COPYRIGHT
                 );
                 let mut text_w: Vec<u16> = OsStr::new(&text).encode_wide().collect();
                 
@@ -177,16 +177,16 @@ fn print_logo_windows(display_duration: u64) {
 
 #[allow(dead_code)]
 fn print_logo_default() {   
-    let mut logo = crate::constants::LOGO.to_string();
+    let mut logo = crate::lycrex::info::LOGO.to_string();
 
-    let edition = match crate::constants::EDITION {
+    let edition = match crate::lycrex::info::EDITION {
         "Public Edition" => "Public Edition".green().bold(),
         "Private Edition" => "Private Edition".yellow().bold(),
-        _ => crate::constants::EDITION.red().bold(),
+        _ => crate::lycrex::info::EDITION.red().bold(),
     };
 
-    logo.push_str(&format!("\nLycrex Tool {} v{}", edition, crate::constants::VERSION));
-    logo.push_str(&format!("\n{}", crate::constants::COPYRIGHT));
+    logo.push_str(&format!("\nLycrex Tool {} v{}", edition, crate::lycrex::info::CARGO_VERSION));
+    logo.push_str(&format!("\n{}", crate::lycrex::info::COPYRIGHT));
     logo.push_str(&format!("\n"));
     println!("{}", create_info_box(logo, Some(80), true));
 }

@@ -1,7 +1,7 @@
 [package]
 name = "lycrex-tool"
 version = "0.0.3"
-edition = "2024"
+edition = "2021"
 description = "Lycrex Tool"
 license = "MIT"
 authors = ["ChisatoNishikigi73"]
@@ -19,6 +19,7 @@ windows = { version = "0.52", features = [
     "Win32_Graphics_Gdi",
     "Win32_UI_WindowsAndMessaging"
 ], optional = true }
+colored = "3.0.0"
 
 [features]
 default = ["windows"]

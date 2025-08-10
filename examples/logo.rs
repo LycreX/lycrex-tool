@@ -34,6 +34,8 @@ pub fn main() {
 
     #[cfg(not(all(feature = "win-memory", target_os = "windows")))]
     {
+        use lycrex_tool::lycrex::logo;
+        
         logo::display_logo(Some(2));
         println!("Memory feature is not enabled in this platform");
     }

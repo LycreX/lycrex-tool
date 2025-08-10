@@ -1,9 +1,13 @@
+use colored::Colorize;
+use crate::utils::format::create_info_box;
+
+/// Windows dependencies
 #[cfg(target_os = "windows")]
 use windows::core::PCWSTR;
-
+#[cfg(target_os = "windows")]
 use std::thread;
+#[cfg(target_os = "windows")]
 use std::time::Duration;
-
 #[cfg(target_os = "windows")]
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM, COLORREF, HINSTANCE, RECT};
 #[cfg(target_os = "windows")]
@@ -27,13 +31,14 @@ use std::os::windows::ffi::OsStrExt;
 /// # Arguments
 /// * `display_duration` - logo显示时间（秒），默认为1秒
 pub fn display_logo(display_duration: Option<u64>) {
-    let duration = display_duration.unwrap_or(1);
     
+    #[allow(unused_variables)]
+    let duration = display_duration.unwrap_or(1);
     #[cfg(target_os = "windows")]
     {
         thread::spawn(move || print_logo_windows(duration));
     }
-    #[cfg(target_os = "linux")]
+    #[cfg(not(all(feature = "win-memory", target_os = "windows")))]
     {
         print_logo_default();
     }
@@ -171,8 +176,17 @@ fn print_logo_windows(display_duration: u64) {
 }
 
 #[allow(dead_code)]
-fn print_logo_default() {
-    println!("{}", crate::constants::LOGO);
-    println!("Lycrex Tool Version: {}", crate::constants::VERSION);
-    println!("{}", crate::constants::COPYRIGHT);
+fn print_logo_default() {   
+    let mut logo = crate::constants::LOGO.to_string();
+
+    let edition = match crate::constants::EDITION {
+        "Public Edition" => "Public Edition".green().bold(),
+        "Private Edition" => "Private Edition".yellow().bold(),
+        _ => crate::constants::EDITION.red().bold(),
+    };
+
+    logo.push_str(&format!("\nLycrex Tool {} v{}", edition, crate::constants::VERSION));
+    logo.push_str(&format!("\n{}", crate::constants::COPYRIGHT));
+    logo.push_str(&format!("\n"));
+    println!("{}", create_info_box(logo, Some(80), true));
 }

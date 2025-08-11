@@ -38,7 +38,7 @@ pub fn display_logo(display_duration: Option<u64>) {
     {
         thread::spawn(move || print_logo_windows(duration));
     }
-    #[cfg(not(all(feature = "win-memory", target_os = "windows")))]
+    #[cfg(not(target_os = "windows"))]
     {
         print_logo_default();
     }

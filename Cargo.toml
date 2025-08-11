@@ -27,7 +27,3 @@ sysinfo = "0.36.1"
 # Unix系统相关依赖
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
-
-[features]
-default = ["windows"]
-win-memory = ["windows"]

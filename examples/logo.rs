@@ -1,11 +1,11 @@
 pub fn main() {
     use lycrex_tool::lycrex::logger::start_log_simple;
-    use lycrex_tool::{info, warn};
-    start_log_simple("info", false, 6).expect("Init log failed");
+    use lycrex_tool::{info, error};
+    start_log_simple("debug", false, 6).expect("Init log failed");
     info!("example", "Init log success");
 
 
-    #[cfg(all(feature = "win-memory", target_os = "windows"))]
+    #[cfg(target_os = "windows")]
     {
         use lycrex_tool::memory::win_memory::ProcessInstance;
         use lycrex_tool::memory::win_memory::to_u32;
@@ -33,11 +33,61 @@ pub fn main() {
         }
     }
 
-    #[cfg(not(all(feature = "win-memory", target_os = "windows")))]
+    #[cfg(target_os = "macos")]
     {
         use lycrex_tool::lycrex::logo;
-        
+        use lycrex_tool::system::memory::MemoryManager;
+
+
         logo::display_logo(Some(2));
-        warn!("example", "Memory feature is not enabled in this platform");
+
+        let memory = MemoryManager::new();
+        let proc = memory.create_process_instance_by_pid(48180).expect("Create process instance failed");
+        loop {
+            use std::time::Duration;
+            use std::thread;
+            
+            let data_seg_offset: usize = 0x54000;
+            let health_offset: usize = 0x0;
+            let mana_offset: usize = 0x4;
+            let coins_offset: usize = 0x8;
+            let level_offset: usize = 0xC;
+            
+            match proc.read_u32(data_seg_offset + health_offset) {
+                Ok(val) => {
+                    info!("example", "health: {}", val);
+                }
+                Err(e) => {
+                    error!("example", "Read memory failed: {}", e);
+                }
+            }
+            match proc.read_u32(data_seg_offset + mana_offset) {
+                Ok(val) => {
+                    info!("example", "mana: {}", val);
+                }
+                Err(e) => {
+                    error!("example", "Read memory failed: {}", e);
+                }
+            }
+            match proc.read_u32(data_seg_offset + coins_offset) {
+                Ok(val) => {
+                    info!("example", "coins: {}", val);
+                }
+                Err(e) => {
+                    error!("example", "Read memory failed: {}", e);
+                }
+            }
+            match proc.read_u32(data_seg_offset + level_offset) {
+                Ok(val) => {
+                    info!("example", "level: {}\n", val);
+                }
+                Err(e) => {
+                    error!("example", "Read memory failed: {}", e);
+                }
+            }
+
+            thread::sleep(Duration::from_secs(1));
+
+        }
     }
 }

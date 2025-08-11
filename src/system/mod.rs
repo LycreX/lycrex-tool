@@ -35,6 +35,9 @@ pub mod hardware;
 // 安全工具模块
 pub mod security;
 
+// 内存管理模块
+pub mod memory;
+
 // 通用工具和类型定义
 pub mod common;
 
@@ -99,6 +102,11 @@ impl SystemTools {
         &security::SecurityTools
     }
     
+    /// 获取内存管理器
+    pub fn memory() -> memory::MemoryManager {
+        memory::MemoryManager::new()
+    }
+    
     /// 获取注册表工具 (Windows only)
     #[cfg(target_os = "windows")]
     pub fn registry() -> &'static registry::RegistryTools {
@@ -108,7 +116,7 @@ impl SystemTools {
 
 /// 快速访问宏
 #[macro_export]
-macro_rules! sys {
+macro_rules! systools {
     (sysinfo) => { $crate::system::SystemTools::sysinfo() };
     (startup) => { $crate::system::SystemTools::startup() };
     (process) => { $crate::system::SystemTools::process() };
@@ -120,6 +128,7 @@ macro_rules! sys {
     (environment) => { $crate::system::SystemTools::environment() };
     (hardware) => { $crate::system::SystemTools::hardware() };
     (security) => { $crate::system::SystemTools::security() };
+    (memory) => { $crate::system::SystemTools::memory() };
 }
 
 /// Windows专用宏

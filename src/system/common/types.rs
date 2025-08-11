@@ -198,4 +198,48 @@ pub enum TaskSchedule {
     Cron(String),                 // Cron表达式
     OnBoot,                       // 开机启动
     OnLogin,                      // 登录时启动
+}
+
+/// 内存读写权限
+#[derive(Debug, Clone, PartialEq)]
+pub enum MemoryPermission {
+    Read,
+    Write,
+    Execute,
+    ReadWrite,
+    ReadExecute,
+    WriteExecute,
+    ReadWriteExecute,
+}
+
+/// 内存操作结果
+#[derive(Debug, Clone)]
+pub struct MemoryOperationResult {
+    pub success: bool,
+    pub bytes_processed: usize,
+    pub error_message: Option<String>,
+}
+
+/// 进程内存信息
+#[derive(Debug, Clone)]
+pub struct ProcessMemoryInfo {
+    pub pid: u32,
+    pub process_name: Option<String>,
+    pub base_address: usize,
+    pub memory_usage: u64,      // 字节
+    pub virtual_size: u64,      // 虚拟内存大小
+    pub working_set: u64,       // 工作集大小
+    pub peak_working_set: u64,  // 峰值工作集
+    pub private_bytes: u64,     // 私有字节数
+}
+
+/// 内存区域信息
+#[derive(Debug, Clone)]
+pub struct MemoryRegion {
+    pub base_address: usize,
+    pub size: usize,
+    pub protection: MemoryPermission,
+    pub is_committed: bool,
+    pub is_private: bool,
+    pub module_name: Option<String>,
 } 

@@ -27,6 +27,10 @@ pub enum SystemError {
     InvalidArgument(String),
     /// 内部错误
     Internal(String),
+    /// 进程相关错误
+    ProcessError(String),
+    /// 内存操作错误
+    MemoryError(String),
     /// 未知错误
     Unknown(String),
 }
@@ -52,6 +56,8 @@ impl fmt::Display for SystemError {
             SystemError::Busy(msg) => write!(f, "Resource busy: {}", msg),
             SystemError::InvalidArgument(msg) => write!(f, "Invalid argument: {}", msg),
             SystemError::Internal(msg) => write!(f, "Internal error: {}", msg),
+            SystemError::ProcessError(msg) => write!(f, "Process error: {}", msg),
+            SystemError::MemoryError(msg) => write!(f, "Memory error: {}", msg),
             SystemError::Unknown(msg) => write!(f, "Unknown error: {}", msg),
         }
     }
@@ -115,6 +121,12 @@ macro_rules! system_error {
     };
     (internal, $msg:expr) => {
         $crate::system::common::SystemError::Internal($msg.to_string())
+    };
+    (process, $msg:expr) => {
+        $crate::system::common::SystemError::ProcessError($msg.to_string())
+    };
+    (memory, $msg:expr) => {
+        $crate::system::common::SystemError::MemoryError($msg.to_string())
     };
     (unknown, $msg:expr) => {
         $crate::system::common::SystemError::Unknown($msg.to_string())

@@ -270,17 +270,17 @@ fn simple_erf_test() {
     test_function("erf(0)", erf(0.0), 0.0, "erf(0) = 0");
     test_function("erf(∞)", erf(f64::INFINITY), 1.0, "erf(∞) = 1");
     test_function("erf(-∞)", erf(f64::NEG_INFINITY), -1.0, "erf(-∞) = -1");
-    test_function("erf(0.02)", erf(0.02), 0.022564575, "小参数区间");
-    test_function("erf(0.1)", erf(0.1), 0.112462916, "小参数区间");
-    test_function("erf(0.2)", erf(0.2), 0.222702589, "中小参数区间");
-    test_function("erf(0.9)", erf(0.9), 0.796908212, "中等参数区间");
-    test_function("erf(1)", erf(1.0), 0.842700793, "标准测试值");
-    test_function("erf(2)", erf(2.0), 0.995322265, "中大参数区间");
-    test_function("erf(3.5)", erf(3.5), 0.999999257, "大参数区间");
-    test_function("erf(-0.1)", erf(-0.1), -0.112462916, "负数对称性");
-    test_function("erf(-0.5)", erf(-0.5), -0.520499878, "负数对称性");
-    test_function("erf(-1)", erf(-1.0), -0.842700793, "负数对称性");
-    test_function("erf(-2)", erf(-2.0), -0.995322265, "负数对称性");
+    test_function("erf(0.020)", erf(0.020), 0.022564575, "小参数区间");
+    test_function("erf(0.100)", erf(0.100), 0.112462916, "小参数区间");
+    test_function("erf(0.200)", erf(0.200), 0.222702589, "中小参数区间");
+    test_function("erf(0.900)", erf(0.900), 0.796908212, "中等参数区间");
+    test_function("erf(1.000)", erf(1.000), 0.842700793, "标准测试值");
+    test_function("erf(2.000)", erf(2.000), 0.995322265, "中大参数区间");
+    test_function("erf(3.500)", erf(3.500), 0.999999257, "大参数区间");
+    test_function("erf(-0.10)", erf(-0.1), -0.112462916, "负数对称性");
+    test_function("erf(-0.50)", erf(-0.5), -0.520499878, "负数对称性");
+    test_function("erf(-1.00)", erf(-1.0), -0.842700793, "负数对称性");
+    test_function("erf(-2.00)", erf(-2.0), -0.995322265, "负数对称性");
     test_function("erfc(0.02)", erfc(0.02), 0.977435425, "小参数互补");
     test_function("erfc(0.04)", erfc(0.04), 0.954888894, "小参数互补");
     test_function("erfc(0.06)", erfc(0.06), 0.932378406, "小参数互补");
@@ -299,7 +299,7 @@ fn full_erf_test() {
     test_function("erf(0.04)", erf(0.04), 0.045111106, "小参数区间");
     test_function("erf(0.06)", erf(0.06), 0.067621594, "小参数区间");
     test_function("erf(0.08)", erf(0.08), 0.090078126, "小参数区间");
-    test_function("erf(0.1)", erf(0.1), 0.112462916, "小参数区间");
+    test_function("erf(0.10)", erf(0.10), 0.112462916, "小参数区间");
     
     // 中小参数测试 (0.1 < x ≤ 0.5)
     test_function("erf(0.2)", erf(0.2), 0.222702589, "中小参数区间");
@@ -312,7 +312,7 @@ fn full_erf_test() {
     test_function("erf(0.7)", erf(0.7), 0.677801194, "中等参数区间");
     test_function("erf(0.8)", erf(0.8), 0.742100965, "中等参数区间");
     test_function("erf(0.9)", erf(0.9), 0.796908212, "中等参数区间");
-    test_function("erf(1)", erf(1.0), 0.842700793, "标准测试值");
+    test_function("erf(1.0)", erf(1.0), 0.842700793, "标准测试值");
     
     // 中大参数测试 (1.0 < x ≤ 2.0)
     test_function("erf(1.1)", erf(1.1), 0.880205070, "中大参数区间");
@@ -324,7 +324,7 @@ fn full_erf_test() {
     test_function("erf(1.7)", erf(1.7), 0.983790459, "中大参数区间");
     test_function("erf(1.8)", erf(1.8), 0.989090502, "中大参数区间");
     test_function("erf(1.9)", erf(1.9), 0.992790429, "中大参数区间");
-    test_function("erf(2)", erf(2.0), 0.995322265, "中大参数区间");
+    test_function("erf(2.0)", erf(2.0), 0.995322265, "中大参数区间");
     
     // 大参数测试 (x > 2.0)
     test_function("erf(2.1)", erf(2.1), 0.997020533, "大参数区间");
@@ -332,14 +332,14 @@ fn full_erf_test() {
     test_function("erf(2.3)", erf(2.3), 0.998856823, "大参数区间");
     test_function("erf(2.4)", erf(2.4), 0.999311486, "大参数区间");
     test_function("erf(2.5)", erf(2.5), 0.999593048, "大参数区间");
-    test_function("erf(3)", erf(3.0), 0.999977910, "大参数区间");
+    test_function("erf(3.0)", erf(3.0), 0.999977910, "大参数区间");
     test_function("erf(3.5)", erf(3.5), 0.999999257, "大参数区间");
     
     // 负数对称性测试
     test_function("erf(-0.1)", erf(-0.1), -0.112462916, "负数对称性");
     test_function("erf(-0.5)", erf(-0.5), -0.520499878, "负数对称性");
-    test_function("erf(-1)", erf(-1.0), -0.842700793, "负数对称性");
-    test_function("erf(-2)", erf(-2.0), -0.995322265, "负数对称性");
+    test_function("erf(-1.0)", erf(-1.0), -0.842700793, "负数对称性");
+    test_function("erf(-2.0)", erf(-2.0), -0.995322265, "负数对称性");
     
     // 补误差函数 erfc(x) = 1 - erf(x) 精度测试
     println!("\n   Complementary Error Function (erfc):");
@@ -349,7 +349,7 @@ fn full_erf_test() {
     test_function("erfc(0.04)", erfc(0.04), 0.954888894, "小参数互补");
     test_function("erfc(0.06)", erfc(0.06), 0.932378406, "小参数互补");
     test_function("erfc(0.08)", erfc(0.08), 0.909921874, "小参数互补");
-    test_function("erfc(0.1)", erfc(0.1), 0.887537084, "小参数互补");
+    test_function("erfc(0.10)", erfc(0.10), 0.887537084, "小参数互补");
     
     // 中小参数 erfc 测试
     test_function("erfc(0.2)", erfc(0.2), 0.777297411, "中小参数互补");
@@ -362,7 +362,7 @@ fn full_erf_test() {
     test_function("erfc(0.7)", erfc(0.7), 0.322198806, "中等参数互补");
     test_function("erfc(0.8)", erfc(0.8), 0.257899035, "中等参数互补");
     test_function("erfc(0.9)", erfc(0.9), 0.203091788, "中等参数互补");
-    test_function("erfc(1)", erfc(1.0), 0.157299207, "标准互补值");
+    test_function("erfc(1.0)", erfc(1.0), 0.157299207, "标准互补值");
     
     // 中大参数 erfc 测试
     test_function("erfc(1.1)", erfc(1.1), 0.119794930, "中大参数互补");
@@ -374,7 +374,7 @@ fn full_erf_test() {
     test_function("erfc(1.7)", erfc(1.7), 0.016209541, "中大参数互补");
     test_function("erfc(1.8)", erfc(1.8), 0.010909498, "中大参数互补");
     test_function("erfc(1.9)", erfc(1.9), 0.007209571, "中大参数互补");
-    test_function("erfc(2)", erfc(2.0), 0.004677735, "中大参数互补");
+    test_function("erfc(2.0)", erfc(2.0), 0.004677735, "中大参数互补");
     
     // 大参数 erfc 测试
     test_function("erfc(2.1)", erfc(2.1), 0.002979467, "大参数互补");
@@ -382,6 +382,6 @@ fn full_erf_test() {
     test_function("erfc(2.3)", erfc(2.3), 0.001143177, "大参数互补");
     test_function("erfc(2.4)", erfc(2.4), 0.000688514, "大参数互补");
     test_function("erfc(2.5)", erfc(2.5), 0.000406952, "大参数互补");
-    test_function("erfc(3)", erfc(3.0), 0.000022090, "大参数互补");
+    test_function("erfc(3.0)", erfc(3.0), 0.000022090, "大参数互补");
     test_function("erfc(3.5)", erfc(3.5), 0.000000743, "大参数互补");
 }

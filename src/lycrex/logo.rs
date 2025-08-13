@@ -177,12 +177,13 @@ fn print_logo_windows(display_duration: u64) {
 
 #[allow(dead_code)]
 fn print_logo_default() {   
-    let mut logo = crate::lycrex::info::LOGO.to_string();
+    let mut logo = crate::lycrex::info::LOGO_FIX.to_string();
+    let raw_edition = crate::lycrex::info::EDITION.to_string();
 
-    let edition = match crate::lycrex::info::EDITION {
-        "Public Edition" => "Public Edition".green().bold(),
-        "Private Edition" => "Private Edition".yellow().bold(),
-        _ => crate::lycrex::info::EDITION.red().bold(),
+    let edition = match raw_edition.as_str() {
+        "Public Edition" => raw_edition.green().bold(),
+        "Private Edition" => raw_edition.yellow().bold(),
+        _ => raw_edition.red().bold(),
     };
 
     logo.push_str(&format!("\nLycrex Tool {} v{}", edition, crate::lycrex::info::CARGO_VERSION));

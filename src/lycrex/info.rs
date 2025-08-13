@@ -8,6 +8,16 @@ pub const LOGO: &str = r#"
 
 "#;
 
+pub const LOGO_FIX: &str = r#"
+    __                        _  __
+   / / Copr. ©2025_______ __ | |/ /
+  / /   / / / / ___/ ___/ _ \|   / 
+ / /___/ /_/ / /__/ /  /  __/   |  
+/_____/\__, /\___/_/   \___/_/|_|  
+          /____/ Lycrex.All Rights Reserved.
+
+"#;
+
 pub const LOGO_WINDOWS: &str = r#"
     __                        _  __
    / / Copr. ©2025_______ __ | |/ /

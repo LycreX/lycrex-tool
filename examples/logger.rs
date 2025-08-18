@@ -5,17 +5,20 @@ use lycrex_tool::lycrex::logger::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = LogConfig::default();
-    config.level_filter = LevelFilter::new(Level::info());
+    config.level_filter = LevelFilter::new(Level::trace());
     let console_writer = ConsoleWriter::new();
     let file_writer = FileWriter::new("app.log".to_string());
     config.writers.push(Box::new(console_writer));
     config.writers.push(Box::new(file_writer?));
     let mut logger = Logger::from_config(config);
     
+    logger.log(Level::trace(), "example", "This is a Trace message", None, None, None);
+    logger.log(Level::debug(), "example", "This is a Debug message", None, None, None);
     logger.log(Level::info(), "example", "This is an Info message", None, None, None);
+    logger.log(Level::notice(), "example", "This is a Notice message", None, None, None);
     logger.log(Level::warn(), "example", "This is a Warn message", None, None, None);
     logger.log(Level::error(), "example", "This is an Error message", None, None, None);
-
+    logger.log(Level::fatal(), "example", "This is a Fatal message", None, None, None);
 
     let database_level = Level::custom("DATABASE", 15, "\x1b[35m");
     let security_level = Level::custom("SECURITY", 20, "\x1b[91m");

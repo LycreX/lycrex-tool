@@ -3,6 +3,7 @@ use std::{
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
     collections::HashMap,
+    any::Any,
 };
 use crate::utils::time::{TimeFormat, TimeUtils};
 
@@ -16,6 +17,7 @@ pub enum PredefinedLevel {
     Warn = 40,
     Error = 50,
     Fatal = 65,
+    Record = u8::MAX as isize,
 }
 
 /// 日志级别（支持自定义级别）
@@ -46,6 +48,7 @@ impl Level {
                 PredefinedLevel::Warn => "WARN".to_string(),
                 PredefinedLevel::Error => "ERROR".to_string(),
                 PredefinedLevel::Fatal => "FATAL".to_string(),
+                PredefinedLevel::Record => "RECORD".to_string(),
             },
             Level::Custom { name, .. } => name.to_uppercase(),
         }
@@ -60,6 +63,7 @@ impl Level {
             "WARN" => Level::Predefined(PredefinedLevel::Warn),
             "ERROR" => Level::Predefined(PredefinedLevel::Error),
             "FATAL" => Level::Predefined(PredefinedLevel::Fatal),
+            "RECORD" => Level::Predefined(PredefinedLevel::Record),
             _ => Level::Custom { name: s.to_string(), priority: 30, color: "".to_string() },
         }
     }
@@ -83,12 +87,14 @@ impl Level {
                 PredefinedLevel::Warn => "\x1b[33m".to_string(),  // 黄
                 PredefinedLevel::Error => "\x1b[31m".to_string(), // 红
                 PredefinedLevel::Fatal => "\x1b[91;1m".to_string(), // 血红
+                PredefinedLevel::Record => "".to_string(),
             },
             Level::Custom { color, .. } => color.clone(),
         }
     }
 
     /// 预定义级别便捷方法
+    pub fn record() -> Self { Level::Predefined(PredefinedLevel::Record) }
     pub fn trace() -> Self { Level::Predefined(PredefinedLevel::Trace) }
     pub fn debug() -> Self { Level::Predefined(PredefinedLevel::Debug) }
     pub fn notice() -> Self { Level::Predefined(PredefinedLevel::Notice) }
@@ -210,6 +216,11 @@ impl LevelFilter {
 
     /// 检查级别是否应该被记录
     pub fn should_log(&self, level: &Level) -> bool {
+
+        if level == &Level::Predefined(PredefinedLevel::Record) {
+            return true;
+        }
+
         let level_name = level.as_str();
         
         // 检查是否被明确禁用
@@ -308,6 +319,11 @@ impl DefaultFormatter {
 impl Formatter for DefaultFormatter {
     fn format(&self, record: &LogRecord) -> String {
         let mut output = String::new();
+
+        if record.level == Level::Predefined(PredefinedLevel::Record) {
+            output.push_str(&record.message);
+            return output;
+        }
         
         // 时间戳
         if self.show_timestamp {
@@ -369,6 +385,7 @@ impl Formatter for DefaultFormatter {
 /// 日志输出器
 pub trait Writer: Send + Sync {
     fn write(&self, record: &LogRecord);
+    fn as_any(&self) -> &dyn Any;
 }
 
 /// 控制台输出器
@@ -392,6 +409,10 @@ impl Writer for ConsoleWriter {
     fn write(&self, record: &LogRecord) {
         let message = self.formatter.format(record);
         println!("{}", message);
+    }
+    
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -425,6 +446,10 @@ impl Writer for FileWriter {
             use std::io::Write;
             let _ = writeln!(file, "{}", message);
         }
+    }
+    
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -517,6 +542,33 @@ impl Logger {
             writer.write(&record);
         }
     }
+
+    pub fn log_without_console(&self, level: Level, target: &str, message: &str, 
+                file: Option<&str>, line: Option<u32>, module_path: Option<&str>) {
+        if !self.config.level_filter.should_log(&level) {
+            return;
+        }
+        
+        let record = LogRecord {
+            level,
+            target: target.to_string(),
+            message: message.to_string(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            file: file.map(|s| s.to_string()),
+            line,
+            module_path: module_path.map(|s| s.to_string()),
+        };
+
+        for writer in &self.config.writers {
+            if writer.as_any().downcast_ref::<ConsoleWriter>().is_some() {
+                continue;
+            }
+            writer.write(&record);
+        }
+    }
 }
 
 /// 全局日志记录器（使用Mutex<Option<Logger>>以支持动态配置）
@@ -606,11 +658,34 @@ pub fn log(level: Level, target: &str, message: &str,
     }
 }
 
+/// 记录日志的内部函数（不输出到控制台）
+pub fn log_without_console(level: Level, target: &str, message: &str, 
+            file: Option<&str>, line: Option<u32>, module_path: Option<&str>) {
+    let logger_guard = LOGGER.lock().unwrap();
+    if let Some(ref logger) = *logger_guard {
+        logger.log_without_console(level, target, message, file, line, module_path);
+    }
+}
+
 /// 日志宏
 #[macro_export]
 macro_rules! log {
     ($level:expr, $target:expr, $($arg:tt)*) => {
         $crate::lycrex::logger::log(
+            $level,
+            $target,
+            &format!($($arg)*),
+            Some(file!()),
+            Some(line!()),
+            Some(module_path!())
+        );
+    };
+}
+
+#[macro_export]
+macro_rules! log_without_console {
+    ($level:expr, $target:expr, $($arg:tt)*) => {
+        $crate::lycrex::logger::log_without_console(
             $level,
             $target,
             &format!($($arg)*),
@@ -670,11 +745,17 @@ macro_rules! fatal {
     };
 }
 
-/// 网络日志宏
 #[macro_export]
-macro_rules! network {
-    ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::network(), $target, $($arg)*);
+macro_rules! record {
+    ($($arg:tt)*) => {
+        $crate::log!($crate::lycrex::logger::Level::record(), "lycrex", $($arg)*);
+    };
+}
+
+#[macro_export]
+macro_rules! record_without_console{
+    ($($arg:tt)*) => {
+        $crate::log_without_console!($crate::lycrex::logger::Level::record(), "lycrex", $($arg)*);
     };
 }
 

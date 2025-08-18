@@ -316,14 +316,14 @@ pub mod implementation {
         Ok((handle, base_addr))
     }
 
-    /// 根据进程名和偏移读取内存 (便利函数)
+    /// 根据进程名和偏移读取内存
     pub fn read_process_memory_by_name(process_name: &str, offset: usize, size: usize) -> std::io::Result<Vec<u8>> {
         let pid = find_pid_by_name(process_name)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::NotFound, e.to_string()))?;
         read_process_memory_by_pid(pid, offset, size)
     }
 
-    /// 根据PID和偏移读取内存 (便利函数)
+    /// 根据PID和偏移读取内存 
     pub fn read_process_memory_by_pid(pid: u32, offset: usize, size: usize) -> std::io::Result<Vec<u8>> {
         let (handle, base_addr) = open_handle_and_base(pid)?;
         let result = read_process_memory(handle, base_addr + offset, size);

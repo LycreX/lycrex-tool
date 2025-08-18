@@ -2,12 +2,13 @@ use std::{
     fmt::{self, Write},
     sync::{Arc, Mutex},
     time::{SystemTime, UNIX_EPOCH},
+    collections::HashMap,
 };
 use crate::utils::time::{TimeFormat, TimeUtils};
 
-/// 日志级别
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Level {
+/// 预定义的日志级别
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PredefinedLevel {
     Trace = 0,
     Debug = 1,
     Info = 2,
@@ -15,31 +16,130 @@ pub enum Level {
     Error = 4,
 }
 
+/// 日志级别（支持自定义级别）
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Level {
+    Predefined(PredefinedLevel),
+    Custom { name: String, priority: u8, color: String },
+}
+
 impl Level {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Level::Trace => "TRACE",
-            Level::Debug => "DEBUG",
-            Level::Info => "INFO",
-            Level::Warn => "WARN",
-            Level::Error => "ERROR",
+    /// 创建自定义级别
+    pub fn custom(name: &str, priority: u8, color: &str) -> Self {
+        Level::Custom {
+            name: name.to_string(),
+            priority,
+            color: color.to_string(),
         }
     }
 
-    pub fn color_code(&self) -> &'static str {
+    /// 获取级别名称
+    pub fn as_str(&self) -> String {
         match self {
-            Level::Trace => "\x1b[90m", // 灰
-            Level::Debug => "\x1b[36m", // 青
-            Level::Info => "\x1b[32m",  // 绿
-            Level::Warn => "\x1b[33m",  // 黄
-            Level::Error => "\x1b[31m", // 红
+            Level::Predefined(level) => match level {
+                PredefinedLevel::Trace => "TRACE".to_string(),
+                PredefinedLevel::Debug => "DEBUG".to_string(),
+                PredefinedLevel::Info => "INFO".to_string(),
+                PredefinedLevel::Warn => "WARN".to_string(),
+                PredefinedLevel::Error => "ERROR".to_string(),
+            },
+            Level::Custom { name, .. } => name.to_uppercase(),
         }
+    }
+
+    /// 获取级别优先级
+    pub fn priority(&self) -> u8 {
+        match self {
+            Level::Predefined(level) => *level as u8,
+            Level::Custom { priority, .. } => *priority,
+        }
+    }
+
+    /// 获取颜色代码
+    pub fn color_code(&self) -> String {
+        match self {
+            Level::Predefined(level) => match level {
+                PredefinedLevel::Trace => "\x1b[90m".to_string(), // 灰
+                PredefinedLevel::Debug => "\x1b[36m".to_string(), // 青
+                PredefinedLevel::Info => "\x1b[32m".to_string(),  // 绿
+                PredefinedLevel::Warn => "\x1b[33m".to_string(),  // 黄
+                PredefinedLevel::Error => "\x1b[31m".to_string(), // 红
+            },
+            Level::Custom { color, .. } => color.clone(),
+        }
+    }
+
+    /// 预定义级别便捷方法
+    pub fn trace() -> Self { Level::Predefined(PredefinedLevel::Trace) }
+    pub fn debug() -> Self { Level::Predefined(PredefinedLevel::Debug) }
+    pub fn info() -> Self { Level::Predefined(PredefinedLevel::Info) }
+    pub fn warn() -> Self { Level::Predefined(PredefinedLevel::Warn) }
+    pub fn error() -> Self { Level::Predefined(PredefinedLevel::Error) }
+}
+
+impl PartialOrd for Level {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Level {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.priority().cmp(&other.priority())
     }
 }
 
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+/// 级别过滤器
+#[derive(Debug, Clone)]
+pub struct LevelFilter {
+    min_level: Level,
+    enabled_levels: HashMap<String, bool>,
+    disabled_levels: HashMap<String, bool>,
+}
+
+impl LevelFilter {
+    pub fn new(min_level: Level) -> Self {
+        Self {
+            min_level,
+            enabled_levels: HashMap::new(),
+            disabled_levels: HashMap::new(),
+        }
+    }
+
+    /// 启用特定级别
+    pub fn enable_level(&mut self, level_name: &str) {
+        self.enabled_levels.insert(level_name.to_uppercase(), true);
+        self.disabled_levels.remove(&level_name.to_uppercase());
+    }
+
+    /// 禁用特定级别
+    pub fn disable_level(&mut self, level_name: &str) {
+        self.disabled_levels.insert(level_name.to_uppercase(), true);
+        self.enabled_levels.remove(&level_name.to_uppercase());
+    }
+
+    /// 检查级别是否应该被记录
+    pub fn should_log(&self, level: &Level) -> bool {
+        let level_name = level.as_str();
+        
+        // 检查是否被明确禁用
+        if self.disabled_levels.contains_key(&level_name) {
+            return false;
+        }
+
+        // 检查是否被明确启用
+        if self.enabled_levels.contains_key(&level_name) {
+            return true;
+        }
+
+        // 否则按照最小级别检查
+        level >= &self.min_level
     }
 }
 
@@ -246,7 +346,7 @@ impl Writer for FileWriter {
 
 /// 日志配置
 pub struct LogConfig {
-    pub level: Level,
+    pub level_filter: LevelFilter,
     pub writers: Vec<Box<dyn Writer>>,
     pub time_format: TimeFormat,
 }
@@ -254,7 +354,7 @@ pub struct LogConfig {
 impl Default for LogConfig {
     fn default() -> Self {
         Self {
-            level: Level::Info,
+            level_filter: LevelFilter::new(Level::info()),
             writers: vec![],
             time_format: TimeFormat::SystemTime,
         }
@@ -279,9 +379,19 @@ impl Logger {
         Self { config }
     }
 
-    /// 设置日志级别
-    pub fn set_level(&mut self, level: Level) {
-        self.config.level = level;
+    /// 设置最小日志级别
+    pub fn set_min_level(&mut self, level: Level) {
+        self.config.level_filter = LevelFilter::new(level);
+    }
+
+    /// 启用特定级别
+    pub fn enable_level(&mut self, level_name: &str) {
+        self.config.level_filter.enable_level(level_name);
+    }
+
+    /// 禁用特定级别
+    pub fn disable_level(&mut self, level_name: &str) {
+        self.config.level_filter.disable_level(level_name);
     }
 
     /// 添加输出器
@@ -297,7 +407,7 @@ impl Logger {
     /// 记录日志核心函数
     pub fn log(&self, level: Level, target: &str, message: &str, 
                 file: Option<&str>, line: Option<u32>, module_path: Option<&str>) {
-        if level < self.config.level {
+        if !self.config.level_filter.should_log(&level) {
             return;
         }
 
@@ -322,6 +432,65 @@ impl Logger {
 
 /// 全局日志记录器
 static LOGGER: Mutex<Option<Arc<Logger>>> = Mutex::new(None);
+
+/// 日志级别管理器
+pub struct LevelManager {
+    custom_levels: HashMap<String, Level>,
+}
+
+impl LevelManager {
+    pub fn new() -> Self {
+        Self {
+            custom_levels: HashMap::new(),
+        }
+    }
+
+    /// 注册自定义级别
+    pub fn register_level(&mut self, name: &str, priority: u8, color: &str) {
+        let level = Level::custom(name, priority, color);
+        self.custom_levels.insert(name.to_uppercase(), level);
+    }
+
+    /// 获取已注册的自定义级别
+    pub fn get_level(&self, name: &str) -> Option<&Level> {
+        self.custom_levels.get(&name.to_uppercase())
+    }
+
+    /// 列出所有自定义级别
+    pub fn list_custom_levels(&self) -> Vec<&String> {
+        self.custom_levels.keys().collect()
+    }
+}
+
+/// 全局级别管理器
+static LEVEL_MANAGER: Mutex<Option<LevelManager>> = Mutex::new(None);
+
+/// 获取或初始化全局级别管理器
+fn get_level_manager() -> std::sync::MutexGuard<'static, Option<LevelManager>> {
+    let mut manager = LEVEL_MANAGER.lock().unwrap();
+    if manager.is_none() {
+        *manager = Some(LevelManager::new());
+    }
+    manager
+}
+
+/// 注册全局自定义级别
+pub fn register_global_level(name: &str, priority: u8, color: &str) {
+    let mut manager_guard = get_level_manager();
+    if let Some(ref mut manager) = manager_guard.as_mut() {
+        manager.register_level(name, priority, color);
+    }
+}
+
+/// 获取全局自定义级别
+pub fn get_global_level(name: &str) -> Option<Level> {
+    let manager_guard = get_level_manager();
+    if let Some(ref manager) = manager_guard.as_ref() {
+        manager.get_level(name).cloned()
+    } else {
+        None
+    }
+}
 
 /// 初始化全局日志记录器
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
@@ -370,35 +539,55 @@ macro_rules! log {
 #[macro_export]
 macro_rules! trace {
     ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::Trace, $target, $($arg)*);
+        $crate::log!($crate::lycrex::logger::Level::trace(), $target, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! debug {
     ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::Debug, $target, $($arg)*);
+        $crate::log!($crate::lycrex::logger::Level::debug(), $target, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! info {
     ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::Info, $target, $($arg)*);
+        $crate::log!($crate::lycrex::logger::Level::info(), $target, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! warn {
     ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::Warn, $target, $($arg)*);
+        $crate::log!($crate::lycrex::logger::Level::warn(), $target, $($arg)*);
     };
 }
 
 #[macro_export]
 macro_rules! error {
     ($target:expr, $($arg:tt)*) => {
-        $crate::log!($crate::lycrex::logger::Level::Error, $target, $($arg)*);
+        $crate::log!($crate::lycrex::logger::Level::error(), $target, $($arg)*);
+    };
+}
+
+/// 网络日志宏
+#[macro_export]
+macro_rules! network {
+    ($target:expr, $($arg:tt)*) => {
+        $crate::log!($crate::lycrex::logger::Level::network(), $target, $($arg)*);
+    };
+}
+
+/// 自定义级别日志宏
+#[macro_export]
+macro_rules! custom_log {
+    ($level_name:expr, $priority:expr, $color:expr, $target:expr, $($arg:tt)*) => {
+        $crate::log!(
+            $crate::lycrex::logger::Level::custom($level_name, $priority, $color),
+            $target,
+            $($arg)*
+        );
     };
 }
 
@@ -438,29 +627,26 @@ macro_rules! error_default {
     };
 }
 
+#[macro_export]
+macro_rules! network_default {
+    ($($arg:tt)*) => {
+        $crate::network!("lycrex", $($arg)*);
+    };
+}
+
 pub fn start_log_simple(level: &str, write_file: bool, time_format_int: i8) -> Result<(), Box<dyn std::error::Error>> {
     let mut config = LogConfig::default();
 
-    match level {
-        "trace" => {
-            config.level = Level::Trace;
-        }
-        "debug" => {
-            config.level = Level::Debug;
-        }
-        "info" => {
-            config.level = Level::Info;
-        }
-        "warn" => {
-            config.level = Level::Warn;
-        }
-        "error" => {
-            config.level = Level::Error;
-        }
-        _ => {
-            config.level = Level::Info;
-        }
-    }
+    let log_level = match level {
+        "trace" => Level::trace(),
+        "debug" => Level::debug(),
+        "info" => Level::info(),
+        "warn" => Level::warn(),
+        "error" => Level::error(),
+        _ => Level::info(),
+    };
+    
+    config.level_filter = LevelFilter::new(log_level);
 
     // 设置时间格式
     config.time_format = TimeFormat::from_int(time_format_int).unwrap();
@@ -485,4 +671,64 @@ pub fn start_log_simple(level: &str, write_file: bool, time_format_int: i8) -> R
     config.writers.push(Box::new(console_writer));
     
     init_with_config(config)
+}
+
+/// 高级日志记录器扩展功能
+impl Logger {
+    /// 获取当前级别过滤器的引用
+    pub fn level_filter(&self) -> &LevelFilter {
+        &self.config.level_filter
+    }
+
+    /// 获取可变的级别过滤器引用
+    pub fn level_filter_mut(&mut self) -> &mut LevelFilter {
+        &mut self.config.level_filter
+    }
+
+    /// 批量启用级别
+    pub fn enable_levels(&mut self, level_names: &[&str]) {
+        for name in level_names {
+            self.enable_level(name);
+        }
+    }
+
+    /// 批量禁用级别
+    pub fn disable_levels(&mut self, level_names: &[&str]) {
+        for name in level_names {
+            self.disable_level(name);
+        }
+    }
+
+    /// 检查级别是否启用
+    pub fn is_level_enabled(&self, level: &Level) -> bool {
+        self.config.level_filter.should_log(level)
+    }
+
+    /// 重置级别过滤器
+    pub fn reset_level_filter(&mut self, min_level: Level) {
+        self.config.level_filter = LevelFilter::new(min_level);
+    }
+
+    /// 使用自定义级别记录日志
+    pub fn log_custom(&self, level_name: &str, priority: u8, color: &str, 
+                      target: &str, message: &str, 
+                      file: Option<&str>, line: Option<u32>, module_path: Option<&str>) {
+        let level = Level::custom(level_name, priority, color);
+        self.log(level, target, message, file, line, module_path);
+    }
+}
+
+/// 全局级别控制函数
+pub fn enable_global_level(_level_name: &str) {
+    if let Some(_logger) = get_logger() {
+        // TODO: 重构Logger架构
+        println!("This function is not implemented yet");
+    }
+}
+
+pub fn disable_global_level(_level_name: &str) {
+    if let Some(_logger) = get_logger() {
+        // TODO: 重构Logger架构
+        println!("This function is not implemented yet");
+    }
 }

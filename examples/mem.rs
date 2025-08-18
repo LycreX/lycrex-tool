@@ -21,10 +21,10 @@ fn main() {
 
 fn print_all_values(heap_gems: &Box<i32>, heap_exp: &Box<i32>, heap_score: &Box<i32>, stack_ammo: i32, stack_energy: i32) {
     println!("Global:");
-    println!("  Health: {} (Addr: 0x{:X})", unsafe { UNIQUE_HEALTH }, std::ptr::addr_of!(UNIQUE_HEALTH) as usize );
-    println!("  Mana:   {} (Addr: 0x{:X})", unsafe { UNIQUE_MANA }, std::ptr::addr_of!(UNIQUE_MANA) as usize );
-    println!("  Coins:  {} (Addr: 0x{:X})", unsafe { UNIQUE_COINS }, std::ptr::addr_of!(UNIQUE_COINS) as usize );
-    println!("  Level:  {} (Addr: 0x{:X})", unsafe { UNIQUE_LEVEL }, std::ptr::addr_of!(UNIQUE_LEVEL) as usize);
+    println!("  Health: {} (Addr: 0x{:X})", unsafe { UNIQUE_HEALTH }, unsafe { std::ptr::addr_of!(UNIQUE_HEALTH) as usize } );
+    println!("  Mana:   {} (Addr: 0x{:X})", unsafe { UNIQUE_MANA }, unsafe { std::ptr::addr_of!(UNIQUE_MANA) as usize } );
+    println!("  Coins:  {} (Addr: 0x{:X})", unsafe { UNIQUE_COINS }, unsafe { std::ptr::addr_of!(UNIQUE_COINS) as usize } );
+    println!("  Level:  {} (Addr: 0x{:X})", unsafe { UNIQUE_LEVEL }, unsafe { std::ptr::addr_of!(UNIQUE_LEVEL) as usize } );
     
     println!("Heap:");
     println!("  Gems:   {} (Addr: {:p})", **heap_gems, heap_gems.as_ref());

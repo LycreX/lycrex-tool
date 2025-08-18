@@ -47,6 +47,17 @@ impl Level {
         }
     }
 
+    pub fn from_str(s: &str) -> Self {
+        match s.to_uppercase().as_str() {
+            "TRACE" => Level::Predefined(PredefinedLevel::Trace),
+            "DEBUG" => Level::Predefined(PredefinedLevel::Debug),
+            "INFO" => Level::Predefined(PredefinedLevel::Info),
+            "WARN" => Level::Predefined(PredefinedLevel::Warn),
+            "ERROR" => Level::Predefined(PredefinedLevel::Error),
+            _ => Level::Custom { name: s.to_string(), priority: 0, color: "".to_string() },
+        }
+    }
+
     /// 获取级别优先级
     pub fn priority(&self) -> u8 {
         match self {

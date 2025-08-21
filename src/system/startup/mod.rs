@@ -4,8 +4,8 @@
 use crate::system::common::*;
 
 // 平台特定实现
-#[cfg(target_os = "windows")]
-pub mod windows;
+// #[cfg(target_os = "windows")]
+// pub mod windows;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
@@ -27,7 +27,9 @@ impl StartupManager {
     pub fn list_all(&self) -> SystemResult<Vec<StartupEntry>> {
         // 根据平台调用相应实现
         #[cfg(target_os = "windows")]
-        return windows::list_all_startup_entries();
+        // return windows::list_all_startup_entries();
+        return Err(SystemError::NotSupported("Unsupported platform".to_string()));
+
         
         #[cfg(target_os = "linux")]
         return linux::list_all_startup_entries();
@@ -40,30 +42,32 @@ impl StartupManager {
     }
     
     /// 添加启动项
-    pub fn add_entry(&self, entry: &StartupEntry) -> SystemResult<()> {
+    pub fn add_entry(&self, _entry: &StartupEntry) -> SystemResult<()> {
         #[cfg(target_os = "windows")]
-        return windows::add_startup_entry(entry);
+        // return windows::add_startup_entry(_entry);
+        return Err(SystemError::NotSupported("Unsupported platform".to_string()));
         
         #[cfg(target_os = "linux")]
-        return linux::add_startup_entry(entry);
+        return linux::add_startup_entry(_entry);
         
         #[cfg(target_os = "macos")]
-        return macos::add_startup_entry(entry);
+        return macos::add_startup_entry(_entry);
         
         #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
         Err(SystemError::NotSupported("Unsupported platform".to_string()))
     }
     
     /// 移除启动项
-    pub fn remove_entry(&self, id: &str, startup_type: StartupType) -> SystemResult<()> {
-        #[cfg(target_os = "windows")]
-        return windows::remove_startup_entry(id, startup_type);
+    pub fn remove_entry(&self, id: &str, _startup_type: StartupType) -> SystemResult<()> {
+        // #[cfg(target_os = "windows")]
+        // return windows::remove_startup_entry(id, _startup_type);
+        return Err(SystemError::NotSupported("Unsupported platform".to_string()));
         
         #[cfg(target_os = "linux")]
-        return linux::remove_startup_entry(id, startup_type);
+        return linux::remove_startup_entry(id, _startup_type);
         
         #[cfg(target_os = "macos")]
-        return macos::remove_startup_entry(id, startup_type);
+        return macos::remove_startup_entry(id, _startup_type);
         
         #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
         Err(SystemError::NotSupported("Unsupported platform".to_string()))

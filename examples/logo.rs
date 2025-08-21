@@ -7,8 +7,8 @@ pub fn main() {
 
     #[cfg(target_os = "windows")]
     {
-        use lycrex_tool::memory::win_memory::ProcessInstance;
-        use lycrex_tool::memory::win_memory::to_u32;
+        use lycrex_tool::system::memory::windows::ProcessInstance;
+        use lycrex_tool::system::memory::utils::bytes_to_u32;
         use lycrex_tool::lycrex::logo;
 
         logo::display_logo(Some(2));
@@ -28,7 +28,7 @@ pub fn main() {
             thread::sleep(Duration::from_secs(1));
             proc.write_u32(0x23000, 666).expect("Write memory failed");
             let bytes = proc.read_memory(0x23000, 16).expect("Read memory failed");
-            let val = to_u32(&bytes);
+            let val = bytes_to_u32(&bytes);
             info!("example", "val: {}", val);
         }
     }

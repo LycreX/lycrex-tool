@@ -19,8 +19,9 @@ windows = { version = "0.52", features = [
     "Win32_Graphics_Gdi",
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_SystemInformation",
+    "Win32_System_ProcessStatus",
     "Win32_Security"
-], optional = true }
+]}
 colored = "3.0.0"
 sysinfo = "0.36.1"
 

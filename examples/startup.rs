@@ -1,5 +1,3 @@
-use lycrex_tool::system;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {    
     #[cfg(target_os = "macos")]
     test_macos_startup_management()?;

@@ -14,33 +14,15 @@ impl SystemUtils {
                 // Windows: 检查是否是管理员
                 #[cfg(target_os = "windows")]
                 {
-                    use windows::Win32::Foundation::BOOL;
-                    use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION};
-                    use windows::Win32::System::Threading::GetCurrentProcess;
-                    use windows::Win32::Foundation::CloseHandle;
-                    
-                    unsafe {
-                        let mut token = std::mem::zeroed();
-                        if windows::Win32::Security::OpenProcessToken(
-                            GetCurrentProcess(),
-                            windows::Win32::Security::TOKEN_QUERY,
-                            &mut token,
-                        ).is_ok() {
-                            let mut elevation = TOKEN_ELEVATION { TokenIsElevated: BOOL(0) };
-                            let mut size = 0;
-                            
-                            if GetTokenInformation(
-                                token,
-                                TokenElevation,
-                                Some(&mut elevation as *mut _ as *mut _),
-                                std::mem::size_of::<TOKEN_ELEVATION>() as u32,
-                                &mut size,
-                            ).is_ok() {
-                                CloseHandle(token).ok();
-                                return elevation.TokenIsElevated.as_bool();
-                            }
-                            CloseHandle(token).ok();
+                    match std::fs::OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open("C:\\Windows\\System32\\admintest.tmp") {
+                        Ok(_) => {
+                            let _ = std::fs::remove_file("C:\\Windows\\System32\\admintest.tmp");
+                            true
                         }
+                        Err(_) => false
                     }
                 }
                 #[cfg(not(target_os = "windows"))]

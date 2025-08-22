@@ -1,21 +1,36 @@
 use lycrex_tool::lycrex::logger::{
-    LogConfig, Level, LevelFilter, ConsoleWriter, FileWriter,
-    register_global_level, get_global_level, init_with_config,
-    log, disable_global_level, enable_global_level, disable_global_levels,
-    enable_global_levels,
+    disable_global_level, disable_global_levels, enable_global_level, 
+    enable_global_levels, get_global_level, init_with_config, log, 
+    register_global_level, ConsoleWriter, DefaultFormatter, FileWriter, 
+    Level, LevelFilter, LogConfig
 };
-
+use lycrex_tool::utils::time::TimeFormat;
 use lycrex_tool::{record, record_without_console};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+
     let mut config = LogConfig::default();
     config.level_filter = LevelFilter::new(Level::trace());
-    let console_writer = ConsoleWriter::new();
     let file_writer = FileWriter::new("app.log".to_string());
+
+    let console_formatter = DefaultFormatter {
+        use_colors: true,
+        show_timestamp: true,
+        timestamp_color: "\x1b[2m",
+        timestamp_with_square: false,
+        level_in_right: true,
+        level_width: 8 as usize,
+        show_target: true,
+        show_location: false,
+        time_format: TimeFormat::Iso8601,
+        uptime_level: -1,
+    };
+    let console_writer = ConsoleWriter::with_formatter(Box::new(console_formatter));
     config.writers.push(Box::new(console_writer));
     config.writers.push(Box::new(file_writer?));
+    config.time_format = TimeFormat::Iso8601;
     let _ = init_with_config(config);
-    
+
     log(Level::trace(), "example", "This is a Trace message", None, None, None);
     log(Level::debug(), "example", "This is a Debug message", None, None, None);
     log(Level::info(), "example", "This is an Info message", None, None, None);

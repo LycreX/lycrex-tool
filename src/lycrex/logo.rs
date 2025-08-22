@@ -12,8 +12,8 @@ use std::time::Duration;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM, COLORREF, HINSTANCE, RECT};
 #[cfg(target_os = "windows")]
 use windows::Win32::Graphics::Gdi::{
-    BeginPaint, CreateFontW, CreateSolidBrush, DeleteObject, DrawTextW, DT_CENTER, DT_WORDBREAK,
-    EndPaint, PAINTSTRUCT, SelectObject, SetBkColor, SetTextColor,
+    BeginPaint, CreateSolidBrush, DrawTextW, DT_CENTER, DT_WORDBREAK,
+    EndPaint, PAINTSTRUCT, SelectObject, SetBkColor, SetTextColor, GetStockObject, DEFAULT_GUI_FONT,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -67,11 +67,8 @@ fn print_logo_windows(display_duration: u64) {
                     SetTextColor(hdc, COLORREF(0x00FFFFFF));
                 }
                 
-                // 字体
-                let font = unsafe { CreateFontW(
-                    14, 0, 0, 0, 400, 0, 0, 0, 1, 3, 2, 0, 0, PCWSTR::null(),
-                ) };
-                
+                // 使用默认字体
+                let font = unsafe { GetStockObject(DEFAULT_GUI_FONT) };
                 let old_font = unsafe { SelectObject(hdc, font) };
                 
                 // 格式化显示文本
@@ -96,9 +93,8 @@ fn print_logo_windows(display_duration: u64) {
                     DrawTextW(hdc, &mut text_w, &mut rect, DT_WORDBREAK | DT_CENTER);
                 }
                 
-                // 清理资源
+                // 恢复原字体
                 unsafe { SelectObject(hdc, old_font) };
-                unsafe { DeleteObject(font) };
                 unsafe { EndPaint(hwnd, &ps) };
                 LRESULT(0)
             }
@@ -121,7 +117,7 @@ fn print_logo_windows(display_duration: u64) {
 
     unsafe {
         // 注册窗口类
-        let hinstance = HINSTANCE(0);
+        let hinstance = HINSTANCE(std::ptr::null_mut());
         let wc = WNDCLASSW {
             lpfnWndProc: Some(wnd_proc),
             hInstance: hinstance,
@@ -149,26 +145,27 @@ fn print_logo_windows(display_duration: u64) {
             y,
             window_width,
             window_height,
-            HWND(0),
             None,
-            hinstance,
             None,
-        );
+            Some(hinstance),
+            None,
+        ).unwrap();
         
         // 显示窗口
         ShowWindow(hwnd, SW_SHOW);
         
         // 启动定时器线程，在指定时间后关闭窗口
-        let hwnd_clone = hwnd;
+        let hwnd_raw = hwnd.0 as isize;
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(display_duration));
             // 发送关闭消息到窗口
-            let _result = PostMessageW(hwnd_clone, WM_CLOSE, WPARAM(0), LPARAM(0));
+            let hwnd_clone = HWND(hwnd_raw as *mut std::ffi::c_void);
+            let _result = PostMessageW(Some(hwnd_clone), WM_CLOSE, WPARAM(0), LPARAM(0));
         });
         
         // 消息循环
         let mut msg = MSG::default();
-        while GetMessageW(&mut msg, HWND(0), 0, 0).0 > 0 {
+        while GetMessageW(&mut msg, None, 0, 0).as_bool() {
             TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }

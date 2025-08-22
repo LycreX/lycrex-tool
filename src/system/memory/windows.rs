@@ -79,7 +79,9 @@ pub mod implementation {
         if unsafe { Process32First(snapshot, &mut entry) }.is_ok() {
             loop {
                 let nul_pos = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
-                let exe = String::from_utf8_lossy(&entry.szExeFile[..nul_pos]);
+                let exe = String::from_utf8_lossy(unsafe { 
+                    std::slice::from_raw_parts(entry.szExeFile.as_ptr() as *const u8, nul_pos) 
+                });
                 if exe == process_name {
                     pid = Some(entry.th32ProcessID);
                     trace!("memory", "[{}] Find process: {}", entry.th32ProcessID, process_name);
@@ -152,7 +154,9 @@ pub mod implementation {
             loop {
                 if let Ok(mem_info) = get_process_memory_info(entry.th32ProcessID) {
                     let nul_pos = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
-                    let process_name = String::from_utf8_lossy(&entry.szExeFile[..nul_pos]).to_string();
+                    let process_name = String::from_utf8_lossy(unsafe { 
+                        std::slice::from_raw_parts(entry.szExeFile.as_ptr() as *const u8, nul_pos) 
+                    }).to_string();
                     
                     let mut info = mem_info;
                     info.process_name = Some(process_name);

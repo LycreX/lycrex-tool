@@ -11,7 +11,7 @@ keywords = ["lycrex"]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-windows = { version = "0.52", features = [
+windows = { version = "0.61", features = [
     "Win32_System_Diagnostics_Debug",
     "Win32_Foundation",
     "Win32_System_Threading",

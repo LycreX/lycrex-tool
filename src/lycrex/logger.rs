@@ -258,6 +258,10 @@ pub trait Formatter: Send + Sync {
 pub struct DefaultFormatter {
     pub use_colors: bool,
     pub show_timestamp: bool,
+    pub timestamp_color: &'static str,
+    pub timestamp_with_square: bool,
+    pub level_in_right: bool,
+    pub level_width: usize,
     pub show_target: bool,
     pub show_location: bool,
     pub time_format: TimeFormat,
@@ -269,6 +273,10 @@ impl DefaultFormatter {
         Self {
             use_colors: true,
             show_timestamp: true,
+            timestamp_color: "",
+            timestamp_with_square: false,
+            level_in_right: false,
+            level_width: 6 as usize,
             show_target: true,
             show_location: true,
             time_format: TimeFormat::SystemTime,
@@ -280,6 +288,10 @@ impl DefaultFormatter {
         Self {
             use_colors: false,
             show_timestamp: true,
+            timestamp_color: "",
+            timestamp_with_square: true,
+            level_in_right: false,
+            level_width: 6 as usize,
             show_target: true,
             show_location: true,
             time_format: TimeFormat::SystemTime,
@@ -291,9 +303,13 @@ impl DefaultFormatter {
         Self {
             use_colors: true,
             show_timestamp: true,
+            timestamp_color: "",
+            timestamp_with_square: true,
+            level_in_right: false,
+            level_width: 6 as usize,
             show_target: true,
             show_location: true,
-            time_format,
+            time_format: time_format    ,
             uptime_level: 1,
         }
     }
@@ -308,6 +324,10 @@ impl DefaultFormatter {
         Self {
             use_colors,
             show_timestamp,
+            timestamp_color: "",
+            timestamp_with_square: true,
+            level_in_right: false,
+            level_width: 6 as usize,
             show_target,
             show_location,
             time_format,
@@ -351,18 +371,42 @@ impl Formatter for DefaultFormatter {
                     }
                 }
             };
-            write!(&mut output, "[{}] ", time_str).unwrap();
+
+            let timestamp_color: &'static str = if !self.timestamp_color.is_empty() {
+                self.timestamp_color
+            } else {
+                ""
+            };
+            if self.timestamp_with_square {
+                write!(&mut output, "[{}{}{}] ", timestamp_color, time_str, "\x1b[0m").unwrap();
+            } else {
+                write!(&mut output, "{}{}{} ", timestamp_color, time_str, "\x1b[0m").unwrap();
+            }
         }
 
         // 级别
         if self.use_colors {
-            write!(&mut output, "{}{:<5}{}\x1b[0m ", 
+            // 如果level_in_right为true，则将级别右对齐，否则左对齐
+            let level_format = if self.level_in_right {
+                format!("{:>width$}", record.level.as_str(), width = self.level_width)  // 右对齐: " INFO"
+            } else {
+                format!("{:<width$}", record.level.as_str(), width = self.level_width)  // 左对齐: "INFO "
+            };
+            
+            write!(&mut output, "{}{}{} ", 
                 record.level.color_code(), 
-                record.level.as_str(),
+                level_format,
                 "\x1b[0m"
             ).unwrap();
         } else {
-            write!(&mut output, "[{:<5}] ", record.level.as_str()).unwrap();
+            // 无颜色模式
+            let level_format = if self.level_in_right {
+                format!("[{:>width$}] ", record.level.as_str(), width = self.level_width)  // 右对齐: "[ INFO] "
+            } else {
+                format!("[{:<width$}] ", record.level.as_str(), width = self.level_width)  // 左对齐: "[INFO ] "
+            };
+            
+            write!(&mut output, "{}", level_format).unwrap();
         }
 
         // 目标
@@ -858,6 +902,10 @@ pub fn start_log_simple(level: &str, write_file: bool, time_format_int: i8) -> R
     let console_formatter = DefaultFormatter {
         use_colors: true,
         show_timestamp: true,
+        timestamp_color: "",
+        timestamp_with_square: true,    
+        level_in_right: false,
+        level_width: 6 as usize,
         show_target: true,
         show_location: false,
         time_format: config.time_format,

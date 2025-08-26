@@ -1,7 +1,11 @@
-pub fn main() {
-    use lycrex_tool::lycrex::logger::start_log_simple;
+use lycrex_tool::lycrex::logger::{Logger, Level};
+
+fn main() {
     use lycrex_tool::{info, error};
-    start_log_simple("debug", false, 6).expect("Init log failed");
+    Logger::builder()
+        .level(Level::info())
+        .console()
+        .init().expect("Init log failed");
     info!("example", "Init log success");
 
 

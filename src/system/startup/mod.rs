@@ -58,7 +58,7 @@ impl StartupManager {
     }
     
     /// 移除启动项
-    pub fn remove_entry(&self, id: &str, _startup_type: StartupType) -> SystemResult<()> {
+    pub fn remove_entry(&self, _id: &str, _startup_type: StartupType) -> SystemResult<()> {
         // #[cfg(target_os = "windows")]
         // return windows::remove_startup_entry(id, _startup_type);
         return Err(SystemError::NotSupported("Unsupported platform".to_string()));

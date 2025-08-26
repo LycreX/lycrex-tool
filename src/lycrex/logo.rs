@@ -95,7 +95,7 @@ fn print_logo_windows(display_duration: u64) {
                 
                 // 恢复原字体
                 unsafe { SelectObject(hdc, old_font) };
-                unsafe { EndPaint(hwnd, &ps) };
+                unsafe { let _ = EndPaint(hwnd, &ps); };
                 LRESULT(0)
             }
             WM_DESTROY => {
@@ -152,7 +152,7 @@ fn print_logo_windows(display_duration: u64) {
         ).unwrap();
         
         // 显示窗口
-        ShowWindow(hwnd, SW_SHOW);
+        let _ = ShowWindow(hwnd, SW_SHOW);
         
         // 启动定时器线程，在指定时间后关闭窗口
         let hwnd_raw = hwnd.0 as isize;
@@ -166,14 +166,13 @@ fn print_logo_windows(display_duration: u64) {
         // 消息循环
         let mut msg = MSG::default();
         while GetMessageW(&mut msg, None, 0, 0).as_bool() {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+            let _ = TranslateMessage(&msg);
+            let _ = DispatchMessageW(&msg);
         }
     }
 }
 
-#[allow(dead_code)]
-fn print_logo_default() {   
+pub fn print_logo_default() {
     let mut logo = crate::lycrex::info::LOGO_FIX.to_string();
     let raw_edition = crate::lycrex::info::EDITION.to_string();
 
@@ -185,6 +184,6 @@ fn print_logo_default() {
 
     logo.push_str(&format!("\nLycrex Tool {} v{}", edition, crate::lycrex::info::CARGO_VERSION));
     logo.push_str(&format!("\n{}", crate::lycrex::info::COPYRIGHT));
-    logo.push_str(&format!("\n"));
+    logo.push('\n');
     println!("{}", create_info_box(logo, Some(80), true));
 }

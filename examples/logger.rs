@@ -1,35 +1,22 @@
 use lycrex_tool::lycrex::logger::{
-    disable_global_level, disable_global_levels, enable_global_level, 
-    enable_global_levels, get_global_level, init_with_config, log, 
-    register_global_level, ConsoleWriter, DefaultFormatter, FileWriter, 
-    Level, LevelFilter, LogConfig
+    Logger, Level, log, 
+    register_global_level,
+    disable_global_level, enable_global_level,
+    disable_global_levels, enable_global_levels,
+    get_global_level
 };
-use lycrex_tool::utils::time::TimeFormat;
 use lycrex_tool::{record, record_without_console};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let mut config = LogConfig::default();
-    config.level_filter = LevelFilter::new(Level::trace());
-    let file_writer = FileWriter::new("app.log".to_string());
-
-    let console_formatter = DefaultFormatter {
-        use_colors: true,
-        show_timestamp: true,
-        timestamp_color: "\x1b[2m",
-        timestamp_with_square: false,
-        level_in_right: true,
-        level_width: 8 as usize,
-        show_target: true,
-        show_location: false,
-        time_format: TimeFormat::Iso8601,
-        uptime_level: -1,
-    };
-    let console_writer = ConsoleWriter::with_formatter(Box::new(console_formatter));
-    config.writers.push(Box::new(console_writer));
-    config.writers.push(Box::new(file_writer?));
-    config.time_format = TimeFormat::Iso8601;
-    let _ = init_with_config(config);
+    Logger::builder()
+        .level(Level::trace())
+        .timestamp_brackets(false)
+        .level_brackets(false)
+        .show_target(true)
+        .console()
+        .file("app.log")
+        .init()?;
 
     log(Level::trace(), "example", "This is a Trace message", None, None, None);
     log(Level::debug(), "example", "This is a Debug message", None, None, None);
@@ -49,27 +36,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log(security_level.clone(), "auth", "TEST SECURITY", None, None, None);
     log(performance_level.clone(), "app", "TEST PERF", None, None, None);
 
-    disable_global_level("ERROR");
+    let _ = disable_global_level("ERROR");
     log(Level::error(), "test", "This should be filtered", None, None, None);
     
-    enable_global_level("PERF");
+    let _ = enable_global_level("PERF");
     log(performance_level.clone(), "app", "This should be displayed", None, None, None);
     
-    enable_global_level("ERROR");
+    let _ = enable_global_level("ERROR");
     log(Level::error(), "test", "ERROR level re-enabled", None, None, None);
 
-    disable_global_levels(&["WARN", "DATABASE", "SECURITY"]);
+    let _ = disable_global_levels(&["WARN", "DATABASE", "SECURITY"]);
     
     log(Level::warn(), "test", "This should be filtered", None, None, None);
     log(database_level.clone(), "db", "This should be filtered", None, None, None);
     log(Level::info(), "test", "This should be displayed", None, None, None);
     
-    enable_global_levels(&["WARN", "DATABASE"]);
+    let _ = enable_global_levels(&["WARN", "DATABASE"]);
     log(Level::warn(), "test", "This should be displayed", None, None, None);
     log(database_level, "db", "This should be displayed", None, None, None);
     
-    register_global_level("API", 12, "\x1b[96m");
-    register_global_level("CACHE", 8, "\x1b[94m");
+    let _ = register_global_level("API", 12, "\x1b[96m");
+    let _ = register_global_level("CACHE", 8, "\x1b[94m");
     
     if let Some(api_level) = get_global_level("API") {
         log(api_level, "api", "API call success", None, None, None);

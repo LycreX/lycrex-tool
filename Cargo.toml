@@ -1,6 +1,6 @@
 [package]
 name = "lycrex-tool"
-version = "0.1.3"
+version = "0.1.3-rc1"
 edition = "2021"
 description = "Lycrex Tool"
 license = "MIT"

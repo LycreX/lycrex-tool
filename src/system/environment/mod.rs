@@ -5,7 +5,7 @@ pub struct EnvironmentManager;
 
 impl EnvironmentManager {
     pub fn get_env_var(&self, name: &str) -> SystemResult<String> {
-        std::env::var(name).map_err(|_| SystemError::NotFound(format!("Environment variable '{}' not found", name)))
+        std::env::var(name).map_err(|_| SystemError::NotFound(format!("Environment variable '{name}' not found")))
     }
     
     pub fn set_env_var(&self, _name: &str, _value: &str) -> SystemResult<()> {

@@ -1316,7 +1316,7 @@ impl FileWriter {
     fn get_or_create_file(&self) -> io::Result<()> {
         let mut handle = self.file_handle.lock().unwrap();
         if handle.is_none() {
-            let file = if self.append {
+            let mut file = if self.append {
                 OpenOptions::new()
                     .create(true)
                     .append(true)
@@ -1329,13 +1329,31 @@ impl FileWriter {
                     .open(&self.path)?
             };
             
+            // 优化文件大小获取：
+            // - 对于覆盖模式（truncate），文件大小为 0
+            // - 对于追加模式，使用 seek 获取当前位置，避免额外的 metadata 系统调用
+            let file_size = if self.append {
+                use std::io::{Seek, SeekFrom};
+                match file.seek(SeekFrom::End(0)) {
+                    Ok(size) => size,
+                    Err(_) => {
+                        // 如果 seek 失败，回退到 metadata 方式
+                        std::fs::metadata(&self.path)
+                            .map(|m| m.len())
+                            .unwrap_or(0)
+                    }
+                }
+            } else {
+                0 // 覆盖模式，文件大小为 0
+            };
+            
             let writer = BufWriter::with_capacity(self.buffer_size, file);
             *handle = Some(writer);
 
-            // 更新文件大小
-            if let Ok(metadata) = std::fs::metadata(&self.path) {
+            // 更新文件大小状态
+            {
                 let mut state = self.rotation_state.lock().unwrap();
-                state.current_size = metadata.len();
+                state.current_size = file_size;
             }
         }
         Ok(())
@@ -2294,6 +2312,7 @@ pub struct LoggerBuilder {
     console_formatter: Option<Box<dyn Formatter>>,
     file_path: Option<String>,
     file_formatter: Option<Box<dyn Formatter>>,
+    file_append: bool,            // 控制文件是否追加写入
     use_colors: bool,
     show_timestamp: bool,
     show_target: bool,
@@ -2324,6 +2343,7 @@ impl LoggerBuilder {
             console_formatter: None,
             file_path: None,
             file_formatter: None,
+            file_append: true,            // 默认追加写入
             use_colors: true,
             show_timestamp: true,
             show_target: true,
@@ -2468,6 +2488,19 @@ impl LoggerBuilder {
 
     pub fn file_formatter(mut self, formatter: Box<dyn Formatter>) -> Self {
         self.file_formatter = Some(formatter);
+        self
+    }
+
+    /// 设置文件写入模式
+    /// - `append`: true 表示追加写入（默认），false 表示覆盖写入
+    pub fn file_append(mut self, append: bool) -> Self {
+        self.file_append = append;
+        self
+    }
+
+    /// 设置文件为覆盖模式（清空原有内容）
+    pub fn file_overwrite(mut self) -> Self {
+        self.file_append = false;
         self
     }
 
@@ -2699,8 +2732,10 @@ impl LoggerBuilder {
             let file_writer = if let Some(ref policy) = self.rotation_policy {
                 FileWriter::with_rotation(path, policy.clone())?
                     .max_backup_files(self.max_backup_files)
+                    .append(self.file_append)
             } else {
                 FileWriter::with_formatter(path, file_formatter)?
+                    .append(self.file_append)
             };
 
             let file_writer: Box<dyn Writer> = Box::new(file_writer);
@@ -2970,6 +3005,33 @@ pub fn unregister_global_level(name: &str) -> Result<(), String> {
 pub fn is_global_logger_initialized() -> bool {
     let logger_guard = GLOBAL_LOGGER.read().unwrap();
     logger_guard.is_some()
+}
+
+/// 设置全局日志等级
+pub fn set_global_level<L: Into<Level>>(level: L) -> Result<(), String> {
+    let mut logger_guard = GLOBAL_LOGGER.write().unwrap();
+    if let Some(ref mut logger) = *logger_guard {
+        logger.config.level_filter.set_min_level_with_level(level.into());
+        Ok(())
+    } else {
+        Err("Global logger not initialized".to_string())
+    }
+}
+
+/// 使用字符串设置全局日志等级
+pub fn set_global_level_str(level: &str) -> Result<(), String> {
+    let log_level = level.parse::<Level>().unwrap_or_else(|_| Level::Custom {
+        name: level.to_string(),
+        priority: 30,
+        color: "".to_string(),
+    });
+    set_global_level(log_level)
+}
+
+/// 获取当前全局日志等级
+pub fn get_global_min_level() -> Option<u8> {
+    let logger_guard = GLOBAL_LOGGER.read().unwrap();
+    logger_guard.as_ref().map(|logger| logger.config.level_filter.get_min_level())
 }
 
 /// 禁用全局级别
